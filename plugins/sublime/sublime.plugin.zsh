@@ -1,4 +1,5 @@
 # Sublime Text 2 Aliases
+#unamestr = 'uname'
 
 local _sublime_darwin_paths > /dev/null 2>&1
 _sublime_darwin_paths=(
@@ -15,9 +16,9 @@ if [[ $('uname') == 'Linux' ]]; then
 	else
 		st_run() { nohup /usr/bin/sublime-text $@ > /dev/null & }
 	fi
-	alias st=st_run
-
+alias st=st_run
 elif  [[ $('uname') == 'Darwin' ]]; then
+<<<<<<< HEAD
 
 	for _sublime_path in $_sublime_darwin_paths; do
 		if [[ -a $_sublime_path ]]; then
@@ -25,6 +26,13 @@ elif  [[ $('uname') == 'Darwin' ]]; then
 			break
 		fi
 	done
+=======
+	# Check if Sublime is installed in user's home application directory
+	if [[ -a $HOME/${_sublime_darwin_subl} ]]; then
+		alias st='$HOME/${_sublime_darwin_subl}'
+	else
+		alias st='${_sublime_darwin_subl}'
+	fi
+>>>>>>> kzsh theme and zshmarks plug-in
 fi
-
 alias stt='st .'
