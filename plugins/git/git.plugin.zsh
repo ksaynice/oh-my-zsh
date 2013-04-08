@@ -1,8 +1,8 @@
 # Aliases
 alias g='git'
 compdef g=git
-alias gst='git status'
-compdef _git gst=git-status
+alias gs='git status'
+compdef _git gs=git-status
 alias gl='git pull'
 compdef _git gl=git-pull
 alias gup='git pull --rebase'
