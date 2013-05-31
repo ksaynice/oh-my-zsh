@@ -11,11 +11,21 @@ if [[ $('uname') == 'Linux' ]]; then
 	fi
 alias st=st_run
 elif  [[ $('uname') == 'Darwin' ]]; then
+<<<<<<< HEAD
 	# Check if Sublime is installed in user's home application directory
 	if [[ -a $HOME/${_sublime_darwin_subl} ]]; then
 		alias st='$HOME/${_sublime_darwin_subl}'
 	else
 		alias st='${_sublime_darwin_subl}'
 	fi
+=======
+
+	for _sublime_path in $_sublime_darwin_paths; do
+		if [[ -a $_sublime_path ]]; then
+			alias st="'$_sublime_path'"
+			break
+		fi
+	done
+>>>>>>> 86a889ea083d341ba2bc48656008e5af46a3df2d
 fi
 alias stt='st .'
