@@ -1,127 +1,68 @@
-## Aliases
-
-alias ba="bundle add"
-alias bck="bundle check"
-alias bcn="bundle clean"
 alias be="bundle exec"
-alias bi="bundle_install"
 alias bl="bundle list"
-alias bo="bundle open"
-alias bout="bundle outdated"
 alias bp="bundle package"
+alias bo="bundle open"
 alias bu="bundle update"
+
+# The following is based on https://github.com/gma/bundler-exec
+
+bundled_commands=(annotate berks cap capify cucumber foodcritic foreman guard irb jekyll kitchen knife middleman nanoc puma rackup rainbows rake rspec ruby shotgun spec spin spork strainer tailor taps thin thor unicorn unicorn_rails)
+
+# Remove $UNBUNDLED_COMMANDS from the bundled_commands list
+for cmd in $UNBUNDLED_COMMANDS; do
+  bundled_commands=(${bundled_commands#$cmd});
+done
 
 ## Functions
 
-bundle_install() {
-  # Bail out if bundler is not installed
-  if (( ! $+commands[bundle] )); then
-    echo "Bundler is not installed"
-    return 1
-  fi
-
-  # Bail out if not in a bundled project
-  if ! _within-bundled-project; then
-    echo "Can't 'bundle install' outside a bundled project"
-    return 1
-  fi
-
-  # Check the bundler version is at least 1.4.0
-  autoload -Uz is-at-least
-  local bundler_version=$(bundle version | cut -d' ' -f3)
-  if ! is-at-least 1.4.0 "$bundler_version"; then
-    bundle install "$@"
-    return $?
-  fi
-
-  # If bundler is at least 1.4.0, use all the CPU cores to bundle install
-  if [[ "$OSTYPE" = (darwin|freebsd)* ]]; then
-    local cores_num="$(sysctl -n hw.ncpu)"
+bi() {
+  if _bundler-installed && _within-bundled-project; then
+    local bundler_version=`bundle version | cut -d' ' -f3`
+    if [[ $bundler_version > '1.4.0' || $bundler_version = '1.4.0' ]]; then
+      if [[ "$(uname)" == 'Darwin' ]]
+      then
+        local cores_num="$(sysctl hw.ncpu | awk '{print $2}')"
+      else
+        local cores_num="$(nproc)"
+      fi
+      bundle install --jobs=$cores_num $@
+    else
+      bundle install $@
+    fi
   else
-    local cores_num="$(nproc)"
+    echo "Can't 'bundle install' outside a bundled project"
   fi
-  BUNDLE_JOBS="$cores_num" bundle install "$@"
 }
 
-## Gem wrapper
+_bundler-installed() {
+  which bundle > /dev/null 2>&1
+}
 
-bundled_commands=(
-  annotate
-  cap
-  capify
-  cucumber
-  foodcritic
-  guard
-  hanami
-  irb
-  jekyll
-  kitchen
-  knife
-  middleman
-  nanoc
-  pry
-  puma
-  rackup
-  rainbows
-  rake
-  rspec
-  rubocop
-  shotgun
-  sidekiq
-  spec
-  spork
-  spring
-  strainer
-  tailor
-  taps
-  thin
-  thor
-  unicorn
-  unicorn_rails
-)
-
-# Remove $UNBUNDLED_COMMANDS from the bundled_commands list
-bundled_commands=(${bundled_commands:|UNBUNDLED_COMMANDS})
-unset UNBUNDLED_COMMANDS
-
-# Add $BUNDLED_COMMANDS to the bundled_commands list
-bundled_commands+=($BUNDLED_COMMANDS)
-unset BUNDLED_COMMANDS
-
-# Check if in the root or a subdirectory of a bundled project
 _within-bundled-project() {
-  local check_dir="$PWD"
-  while [[ "$check_dir" != "/" ]]; do
-    if [[ -f "$check_dir/Gemfile" || -f "$check_dir/gems.rb" ]]; then
-      return 0
-    fi
-    check_dir="${check_dir:h}"
+  local check_dir=$PWD
+  while [ $check_dir != "/" ]; do
+    [ -f "$check_dir/Gemfile" ] && return
+    check_dir="$(dirname $check_dir)"
   done
-  return 1
+  false
 }
 
 _run-with-bundler() {
-  if (( ! $+commands[bundle] )) || ! _within-bundled-project; then
-    "$@"
-    return $?
-  fi
-
-  if [[ -f "./bin/${1}" ]]; then
-    ./bin/${^^@}
+  if _bundler-installed && _within-bundled-project; then
+    bundle exec $@
   else
-    bundle exec "$@"
+    $@
   fi
 }
 
+## Main program
 for cmd in $bundled_commands; do
-  # Create wrappers for bundled and unbundled execution
-  eval "function unbundled_$cmd () { \"$cmd\" \"\$@\"; }"
-  eval "function bundled_$cmd () { _run-with-bundler \"$cmd\" \"\$@\"; }"
-  alias "$cmd"="bundled_$cmd"
+  eval "function unbundled_$cmd () { $cmd \$@ }"
+  eval "function bundled_$cmd () { _run-with-bundler $cmd \$@}"
+  alias $cmd=bundled_$cmd
 
-  # Bind completion function to wrapped gem if available
-  if (( $+functions[_$cmd] )); then
-    compdef "_$cmd" "bundled_$cmd"="$cmd"
+  if which _$cmd > /dev/null 2>&1; then
+        compdef _$cmd bundled_$cmd=$cmd
   fi
 done
-unset cmd bundled_commands
+

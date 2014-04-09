@@ -1,12 +1,12 @@
-function gi() { curl -fLw '\n' https://www.toptal.com/developers/gitignore/api/"${(j:,:)@}" }
+function gi() { curl http://www.gitignore.io/api/$@ ;}
 
-_gitignoreio_get_command_list() {
-  curl -sfL https://www.toptal.com/developers/gitignore/api/list | tr "," "\n"
+_gitignireio_get_command_list() {
+  curl -s http://www.gitignore.io/api/list | tr "," "\n"
 }
 
-_gitignoreio () {
+_gitignireio () {
   compset -P '*,'
-  compadd -S '' `_gitignoreio_get_command_list`
+  compadd -S '' `_gitignireio_get_command_list`
 }
 
-compdef _gitignoreio gi
+compdef _gitignireio gi
