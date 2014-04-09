@@ -11,9 +11,7 @@ if [[ -f ${dirstack_file} ]] && [[ ${#dirstack[*]} -eq 0 ]] ; then
   [[ -d $dirstack[1] ]] && cd $dirstack[1] && cd $OLDPWD
 fi
 
-autoload -U add-zsh-hook
-add-zsh-hook chpwd chpwd_dirpersist
-chpwd_dirpersist() {
+chpwd() {
   if (( $DIRSTACKSIZE <= 0 )) || [[ -z $dirstack_file ]]; then return; fi
   local -ax my_stack
   my_stack=( ${PWD} ${dirstack} )

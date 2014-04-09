@@ -1,15 +1,11 @@
 ################################################################################
 # catimg script by Eduardo San Martin Morote aka Posva                         #
-# https://posva.net                                                            #
+# http://posva.net                                                             #
 #                                                                              #
-# Output the content of an image to the stdout using the 256 colors of the     #
+# Ouput the content of an image to the stdout using the 256 colors of the      #
 # terminal.                                                                    #
-# GitHub: https://github.com/posva/catimg                                      #
+# Github: https://github.com/posva/catimg                                      #
 ################################################################################
-
-# this should come from outside, either `magick` or `convert`
-# from imagemagick v7 and ahead `convert` is deprecated
-: ${CONVERT_CMD:=convert}
 
 function help() {
   echo "Usage catimg [-h] [-w width] [-c char] img"
@@ -47,23 +43,23 @@ if [ ! "$WIDTH" ]; then
 else
   COLS=$(expr $WIDTH "/" $(echo -n "$CHAR" | wc -c))
 fi
-WIDTH=$($CONVERT_CMD "$IMG" -print "%w\n" /dev/null)
+WIDTH=$(convert "$IMG" -print "%w\n" /dev/null)
 if [ "$WIDTH" -gt "$COLS" ]; then
   WIDTH=$COLS
 fi
 
 REMAP=""
-if $CONVERT_CMD "$IMG" -resize $COLS\> +dither -remap $COLOR_FILE /dev/null ; then
+if convert "$IMG" -resize $COLS\> +dither -remap $COLOR_FILE /dev/null ; then
   REMAP="-remap $COLOR_FILE"
 else
   echo "The version of convert is too old, don't expect good results :(" >&2
-  # $CONVERT_CMD "$IMG" -colors 256 PNG8:tmp.png
-  # IMG="tmp.png"
+  #convert "$IMG" -colors 256 PNG8:tmp.png
+  #IMG="tmp.png"
 fi
 
 # Display the image
 I=0
-$CONVERT_CMD "$IMG" -resize $COLS\> +dither `echo $REMAP` txt:- 2>/dev/null |
+convert "$IMG" -resize $COLS\> +dither `echo $REMAP` txt:- 2>/dev/null |
 sed -e 's/.*none.*/NO NO NO/g' -e '1d;s/^.*(\(.*\)[,)].*$/\1/g;y/,/ /' |
 while read R G B f; do
   if [ ! "$R" = "NO" ]; then

@@ -1,21 +1,12 @@
-# gitignore plugin for oh-my-zsh
-# Uses gitignore.io CDN endpoint
-function _gi_curl() {
-  curl -sfL "https://www.gitignore.io/api/$1"
+function gi() { curl http://www.gitignore.io/api/$@ ;}
+
+_gitignireio_get_command_list() {
+  curl -s http://www.gitignore.io/api/list | tr "," "\n"
 }
 
-function gi() {
-  local query="${(j:,:)@}"
-  _gi_curl "$query" || return 1
-}
-
-_gitignoreio_get_command_list() {
-  _gi_curl "list" | tr "," "\n"
-}
-
-_gitignoreio () {
+_gitignireio () {
   compset -P '*,'
-  compadd -S '' $(_gitignoreio_get_command_list)
+  compadd -S '' `_gitignireio_get_command_list`
 }
 
-compdef _gitignoreio gi
+compdef _gitignireio gi
