@@ -1,3 +1,8 @@
+# Handle $0 according to the standard:
+# https://zdharma-continuum.github.io/Zsh-100-Commits-Club/Zsh-Plugin-Standard.html
+0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"
+0="${${(M)0:#/*}:-$PWD/$0}"
+
 # Open the current directory in a Finder window
 alias ofd='open_command $PWD'
 
@@ -11,7 +16,7 @@ function btrestart() {
   sudo kextload -b com.apple.iokit.BroadcomBluetoothHostControllerUSBTransport
 }
 
-function _omz_osx_get_frontmost_app() {
+function _omz_macos_get_frontmost_app() {
   osascript 2>/dev/null <<EOF
     tell application "System Events"
       name of first item of (every process whose frontmost is true)
@@ -24,7 +29,7 @@ function tab() {
   local command="cd \\\"$PWD\\\"; clear"
   (( $# > 0 )) && command="${command}; $*"
 
-  local the_app=$(_omz_osx_get_frontmost_app)
+  local the_app=$(_omz_macos_get_frontmost_app)
 
   if [[ "$the_app" == 'Terminal' ]]; then
     # Discarding stdout to quash "tab N of window id XXX" output
@@ -77,7 +82,7 @@ function vsplit_tab() {
   local command="cd \\\"$PWD\\\"; clear"
   (( $# > 0 )) && command="${command}; $*"
 
-  local the_app=$(_omz_osx_get_frontmost_app)
+  local the_app=$(_omz_macos_get_frontmost_app)
 
   if [[ "$the_app" == 'iTerm' ]]; then
     osascript <<EOF
@@ -125,7 +130,7 @@ function split_tab() {
   local command="cd \\\"$PWD\\\"; clear"
   (( $# > 0 )) && command="${command}; $*"
 
-  local the_app=$(_omz_osx_get_frontmost_app)
+  local the_app=$(_omz_macos_get_frontmost_app)
 
   if [[ "$the_app" == 'iTerm' ]]; then
     osascript 2>/dev/null <<EOF
@@ -219,7 +224,8 @@ function quick-look() {
 }
 
 function man-preview() {
-  man -t "$@" | open -f -a Preview
+  # Don't let Preview.app steal focus if the man page doesn't exist
+  man -w "$@" &>/dev/null && man -t "$@" | open -f -a Preview || man "$@"
 }
 compdef _man man-preview
 
@@ -231,6 +237,29 @@ function vncviewer() {
 function rmdsstore() {
   find "${@:-.}" -type f -name .DS_Store -delete
 }
+
+# Erases purgeable disk space with 0s on the selected disk
+function freespace(){
+  if [[ -z "$1" ]]; then
+    echo "Usage: $0 <disk>"
+    echo "Example: $0 /dev/disk1s1"
+    echo
+    echo "Possible disks:"
+    df -h | awk 'NR == 1 || /^\/dev\/disk/'
+    return 1
+  fi
+
+  echo "Cleaning purgeable files from disk: $1 ...."
+  diskutil secureErase freespace 0 $1
+}
+
+_freespace() {
+  local -a disks
+  disks=("${(@f)"$(df | awk '/^\/dev\/disk/{ printf $1 ":"; for (i=9; i<=NF; i++) printf $i FS; print "" }')"}")
+  _describe disks disks
+}
+
+compdef _freespace freespace
 
 # Music / iTunes control function
 source "${0:h:A}/music"
